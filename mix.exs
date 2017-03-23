@@ -7,6 +7,7 @@ defmodule RakNet.Mixfile do
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     aliases: aliases(),
      deps: deps()]
   end
 
@@ -17,5 +18,9 @@ defmodule RakNet.Mixfile do
 
   defp deps do
     []
+  end
+
+  defp aliases do
+    [test: "test --no-start"]
   end
 end

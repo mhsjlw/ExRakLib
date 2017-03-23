@@ -8,7 +8,7 @@ defmodule RakNet.Client do
       {identifier, packet} ->
         case identifier do
           # handle all packet logic
-          _ -> do: raise "shouldn't happen once every packet is implemented"
+          _ -> "shouldn't happen once every packet is implemented"
         end
     end
     loop(socket, host, port)

@@ -104,21 +104,21 @@ defmodule RakNet.Packet do
   end
   
   def read_string(buffer) do
-    << prefix :: unsigned-size(16), string :: bitstring-size(prefix) >> = buffer
+    << prefix :: unsigned-size(16), string :: binary-size(prefix) >> = buffer
     string
   end
   
   def write_string(string) do
-    << byte_size(string) :: unsigned-size(16), string >>
+    << byte_size(string) :: unsigned-size(16), string :: bitstring >>
   end
   
   def read_bstring(buffer) do
-    << prefix :: unsigned-size(8), string :: bitstring-size(prefix) >> = buffer
+    << prefix :: unsigned-size(8), string :: binary-size(prefix) >> = buffer
     string
   end
   
   def write_bstring(string) do
-    << byte_size(string) :: unsignedsize(8), string >>
+    << byte_size(string) :: unsigned-size(8), string :: bitstring >>
   end
   
   def read_address_port(buffer) do
