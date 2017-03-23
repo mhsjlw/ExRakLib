@@ -102,4 +102,30 @@ defmodule RakNet.Packet do
     [first | [second | [ third | _]]] = triad
     << first :: little-size(8), second :: little-size(8), third :: little-size(8) >>
   end
+  
+  def read_string(buffer) do
+    << prefix :: unsigned-size(16), string :: bitstring-size(prefix) >> = buffer
+    string
+  end
+  
+  def write_string(string) do
+    << byte_size(string) :: unsigned-size(16), string >>
+  end
+  
+  def read_bstring(buffer) do
+    << prefix :: unsigned-size(8), string :: bitstring-size(prefix) >> = buffer
+    string
+  end
+  
+  def write_bstring(string) do
+    << byte_size(string) :: unsignedsize(8), string >>
+  end
+  
+  def read_address_port(buffer) do
+    
+  end
+  
+  def write_address_port(address, port) do
+  
+  end
 end

@@ -4,13 +4,13 @@ defmodule RakNet.Client do
   end
 
   defp loop(socket, host, port) do
-    # receive do
-    #   {identifier, packet} ->
-    #     case identifier do
-
-    #     end
-    #     :gen_udp.write(socket, host, port, )
+    receive do
+      {identifier, packet} ->
+        case identifier do
+          # handle all packet logic
+          _ -> do: raise "shouldn't happen once every packet is implemented"
+        end
+    end
     loop(socket, host, port)
-    # end
   end
 end
