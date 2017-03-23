@@ -13,7 +13,7 @@ defmodule RakNet.Mixfile do
 
   def application do
     [extra_applications: [:logger],
-     mod: {RakNet, []}]
+     mod: {RakNet.Application, []}]
   end
 
   defp deps do

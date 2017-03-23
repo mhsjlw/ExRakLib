@@ -1,5 +1,6 @@
-defmodule RakNet.Packet do
-  @magic << 0x00, 0xff, 0xff, 0x00, 0xfe, 0xfe, 0xfe, 0xfe, 0xfd, 0xfd, 0xfd, 0xfd, 0x12, 0x34, 0x56, 0x78 >>
+defmodule RakNet do
+  @magic << 0, 255, 255, 0, 254, 254, 254, 254, 253, 253, 253, 253, 18, 52, 86, 120 >>
+  @server_identification << 0, 5, 47, 12, 255, 154, 221, 225 >>
 
   @ping 0x00
   @unconnected_ping 0x01
@@ -35,6 +36,7 @@ defmodule RakNet.Packet do
   @ack 0xc0
   
   def magic, do: @magic
+  def server_identification, do: @server_identification
   
   def ping, do: @ping
   def unconnected_ping, do: @unconnected_ping
@@ -68,64 +70,4 @@ defmodule RakNet.Packet do
   def data_packet_F, do: @data_packet_F
   def nack, do: @nack
   def ack, do: @ack
-  
-  def read_ip_address(buffer) do
-    << first :: unsigned-size(8), second :: unsigned-size(8), third :: unsigned-size(8), fourth :: unsigned-size(8) >> = buffer
-    "#{first}.#{second}.#{third}.#{fourth}"
-  end
-  
-  def write_ip_address(address) do
-    [first | [second | [third | [fourth | _]]]] = String.split(address, ".")
-    {first, _} = Integer.parse(first)
-    {second, _} = Integer.parse(second)
-    {third, _} = Integer.parse(third)
-    {fourth, _} = Integer.parse(fourth)
-    << first :: unsigned-size(8), second :: unsigned-size(8), third :: unsigned-size(8), fourth :: unsigned-size(8) >>
-  end
-  
-  def read_triad(buffer) do
-    << first :: size(8), second :: size(8), third :: size(8) >> = buffer
-    [first, second, third]
-  end
-  
-  def write_triad(triad) do
-    [first | [second | [ third | _]]] = triad
-    << first :: size(8), second :: size(8), third :: size(8) >>
-  end
-  
-  def read_ltriad(buffer) do
-    << first :: little-size(8), second :: little-size(8), third :: little-size(8) >> = buffer
-    [first, second, third]
-  end
-  
-  def write_ltriad(triad) do
-    [first | [second | [ third | _]]] = triad
-    << first :: little-size(8), second :: little-size(8), third :: little-size(8) >>
-  end
-  
-  def read_string(buffer) do
-    << prefix :: unsigned-size(16), string :: binary-size(prefix) >> = buffer
-    string
-  end
-  
-  def write_string(string) do
-    << byte_size(string) :: unsigned-size(16), string :: bitstring >>
-  end
-  
-  def read_bstring(buffer) do
-    << prefix :: unsigned-size(8), string :: binary-size(prefix) >> = buffer
-    string
-  end
-  
-  def write_bstring(string) do
-    << byte_size(string) :: unsigned-size(8), string :: bitstring >>
-  end
-  
-  def read_address_port(buffer) do
-    
-  end
-  
-  def write_address_port(address, port) do
-  
-  end
 end
