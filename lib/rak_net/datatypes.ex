@@ -1,4 +1,5 @@
-defmodule RakNet.DataTypes do  
+defmodule RakNet.DataTypes do 
+
   def read_ip_address(buffer) do
     << first :: unsigned-size(8), second :: unsigned-size(8), third :: unsigned-size(8), fourth :: unsigned-size(8) >> = buffer
     "#{first}.#{second}.#{third}.#{fourth}"
