@@ -2,15 +2,10 @@ defmodule RakNet.DataTypes do
 
   def read_ip_address(buffer) do
     << first :: unsigned-size(8), second :: unsigned-size(8), third :: unsigned-size(8), fourth :: unsigned-size(8) >> = buffer
-    "#{first}.#{second}.#{third}.#{fourth}"
+    {first, second, third, fourth}
   end
   
-  def write_ip_address(address) do
-    [first | [second | [third | [fourth | _]]]] = String.split(address, ".")
-    {first, _} = Integer.parse(first)
-    {second, _} = Integer.parse(second)
-    {third, _} = Integer.parse(third)
-    {fourth, _} = Integer.parse(fourth)
+  def write_ip_address({first, second, third, fourth}) do
     << first :: unsigned-size(8), second :: unsigned-size(8), third :: unsigned-size(8), fourth :: unsigned-size(8) >>
   end
   

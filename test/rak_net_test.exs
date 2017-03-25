@@ -3,7 +3,7 @@ defmodule RakNetTest do
   doctest RakNet
 
   test "round trip ip address" do
-  	ip = "192.168.0.1"
+  	ip = {192, 168, 0, 1}
 
   	result = RakNet.DataTypes.write_ip_address(ip)
   		  |> RakNet.DataTypes.read_ip_address
@@ -48,7 +48,7 @@ defmodule RakNetTest do
   end
 
   test "round trip address port" do
-    destination = %{version: 4, address: "192.168.0.1", port: 12345}
+    destination = %{version: 4, address: {192, 168, 0, 1}, port: 12345}
 
     result = RakNet.DataTypes.write_address_port(destination)
         |> RakNet.DataTypes.read_address_port
