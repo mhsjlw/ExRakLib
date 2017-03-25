@@ -38,16 +38,20 @@ defmodule RakNet.Client do
   @nack 0xa0
   @ack 0xc0
 
-  def start_link(state),
-   do: GenServer.start_link(__MODULE__, state)
+  def start_link(state) do
+    state = Map.put(state, :sequence_number, 0)
+    GenServer.start_link(__MODULE__, state)
+  end
 
   def handle_cast({:ping, packet}, state) do
     Logger.info "Got a ping! #{inspect packet}"
-    << ping_id :: size(64) >> = packet
 
-    response = << @pong, ping_id :: size(64) >>
-    write_encapsulated(%{identifier: "pong", flags: 0, buffer: response})
-    :gen_udp.send(state[:socket], state[:host], state[:port], response)
+    packet = RakNet.DataTypes.read_data_packet(packet)
+    [head | tail] = packet[:packets]
+    Logger.info("#{inspect head}")
+
+    # write_encapsulated(%{identifier: "pong", flags: 0, buffer: response})
+    # :gen_udp.send(state[:socket], state[:host], state[:port], response)
 
     {:noreply, state}
   end
@@ -93,6 +97,9 @@ defmodule RakNet.Client do
 
   def handle_cast({:data_packet, packet}, state) do
     Logger.info "Got an data_packet! #{inspect packet}"
+    packet = RakNet.DataTypes.read_data_packet(packet)
+    [head | tail] = packet[:packets]
+    Logger.info("#{inspect head}")
     {:noreply, state}
   end
 

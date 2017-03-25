@@ -1,5 +1,6 @@
 defmodule RakNet.DataTypes do 
   use Bitwise
+  require Logger
 
   def read_ip_address(buffer) do
     << first :: unsigned-size(8), second :: unsigned-size(8), third :: unsigned-size(8), fourth :: unsigned-size(8) >> = buffer
@@ -71,31 +72,38 @@ defmodule RakNet.DataTypes do
 
     payload = << >>
 
-    if has_split do
-      payload ++ << ((reliability <<< 5) ||| 0b00010000) :: size(8) >>
+    [payload] = if has_split do
+      [payload ++ << ((reliability <<< 5) ||| 0b00010000) :: size(8) >>]
     else
-      payload ++ << (reliability <<< 5) :: size(8) >>
+      [payload ++ << (reliability <<< 5) :: size(8) >>]
     end
 
-    if internal do
-      payload ++ << byte_size(buffer) :: size(32) >>
-      payload ++ << identifier_ack :: size(32) >>
+    [payload] = if internal do
+      payload = payload ++ << byte_size(buffer) :: size(32) >>
+      [payload ++ << identifier_ack :: size(32) >>]
     else
-      payload ++ << (byte_size(buffer) <<< 3) :: size(32) >>
+      [payload ++ << (byte_size(buffer) <<< 3) :: size(32) >>]
     end
 
-    if reliability > 0 do
-      if (reliability > 2 || reliability == 2) && reliability != 5 do
-        payload ++ << write_ltriad(message_index) :: binary >>
+    [payload] = if reliability > 0 do
+      [payload] = if (reliability > 2 || reliability == 2) && reliability != 5 do
+        payload = payload ++ << write_ltriad(message_index) :: binary >>
+        [payload]
       end
-      if (reliability < 4 || reliability == 4) && reliability != 2 do
-        payload ++ << write_ltriad(order_index) :: binary >>
-        payload ++ << order_channel :: size(8) >>
-      end
+      [payload]
     end
 
-    if has_split do
-      payload ++ << split_count :: size(32), split_id :: size(16), split_index :: size(32) >>
+    [payload] = if reliability > 0 do
+      [payload] = if (reliability < 4 || reliability == 4) && reliability != 2 do
+        payload = payload ++ << write_ltriad(order_index) :: binary >>
+        payload = payload ++ << order_channel :: size(8) >>
+        [payload]
+      end
+      [payload]
+    end
+
+    [payload] = if has_split do
+      [payload ++ << split_count :: size(32), split_id :: size(16), split_index :: size(32) >>]
     end
 
     payload ++ buffer
@@ -115,12 +123,14 @@ defmodule RakNet.DataTypes do
       identifier_ack = false
       [length, identifier_ack, rest]
     end
+    Logger.info("#{rest}")
 
     [message_index, rest] = if reliability > 0 do
-      [message_index, rest] = if (reliability > 2 || reliability == 2) && reliability != 5 do
-        << message_index :: little-size(24), rest :: binary >> = rest
-        [message_index, rest]
+      [message_index, payload] = if (reliability > 2 || reliability == 2) && reliability != 5 do
+        << message_index :: little-size(24), payload :: binary >> = rest
+        [message_index, payload]
       end
+      [message_index, payload]
     end
 
     [order_index, order_channel, rest] = if reliability > 0 do
@@ -135,6 +145,8 @@ defmodule RakNet.DataTypes do
       [split_count, split_id, split_index, rest]
     end
 
+    << payload :: binary-size(length), rest :: binary >> = rest
+
     %{
       reliability: reliability,
       has_split: has_split || false,
@@ -145,33 +157,71 @@ defmodule RakNet.DataTypes do
       split_count: split_count || nil,
       split_id: split_id || nil,
       split_index: split_index || nil,
-      buffer: rest,
+      buffer: payload,
+      rest: rest,
       need_ack: false,
       identifier_ack: identifier_ack || nil,
     }
   end
 
-  def write_data_packet(packets, sequence_number) do
-    sequence_number = write_ltriad(sequence_number)
+  def write_data_packet(packets) do
+    sequence_number = write_ltriad(packets[:sequence_number])
     [head | tail] = packets
 
-    buffer = << sequence_number :: buffer, head :: binary >>
-    write_data_packet(packets, sequence_number, tail)
+    buffer = << sequence_number :: binary, head :: binary >>
+    write_data_packet(tail, buffer)
   end
 
-  def write_data_packet(packets, sequence_number, buffer) do
-    [head | tail] = packets
-    buffer ++ << buffer :: binary >>
-    write_data_packet(packets, sequence_number, buffer) 
+  defp write_data_packet([head | tail], buffer) do
+    write_data_packet(tail, buffer ++ << head :: binary >>) 
   end
 
-  def write_data_packet([], sequence_number, buffer) do
+  defp write_data_packet([], buffer) do
     buffer
   end
 
   def read_data_packet(buffer) do
-    # how u do ?! 
-    # << sequence_number :: little-size(24), rest :: binary >> = buffer
-    # encapsulated = read_encapsulated(buffer)
+    << sequence_number :: little-size(24), rest :: binary >> = buffer
+    encapsulated = read_encapsulated(buffer)
+
+    # remove the rest
+    read_data_packet(encapsulated[:rest], sequence_number, [%{
+        reliability: encapsulated[:reliability],
+        has_split: encapsulated[:has_split],
+        length: encapsulated[:length],
+        message_index: encapsulated[:message_index],
+        order_index: encapsulated[:order_index],
+        order_channel: encapsulated[:order_channel],
+        split_count: encapsulated[:split_count],
+        split_id: encapsulated[:split_id],
+        split_index: encapsulated[:split_index],
+        buffer: encapsulated[:buffer],
+        need_ack: false,
+        identifier_ack: encapsulated[:identifier_ack]
+      }])
+  end
+
+  defp read_data_packet("", sequence_number, packets) do
+    %{sequence_number: sequence_number, packets: packets}
+  end
+
+  defp read_data_packet(buffer, sequence_number, packets) do
+    encapsulated = read_encapsulated(buffer)
+    packets = [%{
+        reliability: encapsulated[:reliability],
+        has_split: encapsulated[:has_split],
+        length: encapsulated[:length],
+        message_index: encapsulated[:message_index],
+        order_index: encapsulated[:order_index],
+        order_channel: encapsulated[:order_channel],
+        split_count: encapsulated[:split_count],
+        split_id: encapsulated[:split_id],
+        split_index: encapsulated[:split_index],
+        buffer: encapsulated[:buffer],
+        need_ack: false,
+        identifier_ack: encapsulated[:identifier_ack]
+      } | packets]
+
+    read_data_packet(encapsulated[:rest], sequence_number, packets)
   end
 end

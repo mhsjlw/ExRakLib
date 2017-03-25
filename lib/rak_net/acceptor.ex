@@ -55,12 +55,8 @@ defmodule RakNet.Acceptor do
               [{_, client}] = lookup
               cond do
                 Enum.member?(@data_packet_0..@data_packet_F, identifier) -> GenServer.cast(client, {:data_packet, body})
-                identifier == @ping -> GenServer.cast(client, {:ping, body})
                 identifier == @open_connection_request_1 -> GenServer.cast(client, {:open_connection_request_1, body})
                 identifier == @open_connection_request_2 -> GenServer.cast(client, {:open_connection_request_2, body})
-                identifier == @client_connect -> GenServer.cast(client, {:client_connect, body})
-                identifier == @client_handshake -> GenServer.cast(client, {:client_handshake, body})
-                identifier == @client_disconnect -> GenServer.cast(client, {:client_disconnect, body})
                 identifier == @nack -> GenServer.cast(client, {:nack, body})
                 identifier == @ack -> GenServer.cast(client, {:ack, body})
                 true -> "shouldn't happen once every packet is implemented"
