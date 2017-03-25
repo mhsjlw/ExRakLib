@@ -1,82 +1,57 @@
 defmodule RakNet.Client do
+  use GenServer
   require Logger
 
-  @state %{connected: false, queue: []}
-  @host nil
-  @port nil
+  def start_link(state),
+   do: GenServer.start_link(__MODULE__, state) # %{socket: socket, port: port, host: host}
 
-  def start_link(socket, host, port) do
-    @host = host
-    @port = port
-
-    Task.start_link(fn -> loop(socket, host, port) end)
-  end
-
-  defp loop(socket, host, port) do
-    Logger.info "called"
-    data_packet_0 = RakNet.data_packet_0
-    data_packet_F = RakNet.data_packet_F
-
-    ping = RakNet.ping
-    open_connection_request_1 = RakNet.open_connection_request_1
-    open_connection_request_2 = RakNet.open_connection_request_2
-    client_connect = RakNet.client_connect
-    client_handshake = RakNet.client_handshake
-    client_disconnect = RakNet.client_disconnect
-    nack = RakNet.nack
-    ack = RakNet.ack
-
-    receive do
-      {identifier, packet} ->
-        cond do
-          Enum.member?(data_packet_0..data_packet_F, identifier) -> handle_data_packet(packet)
-          identifier == ping -> handle_ping(packet)
-          identifier == open_connection_request_1 -> handle_open_connection_request_1(packet)
-          identifier == open_connection_request_2 -> handle_open_connection_request_2(packet)
-          identifier == client_connect -> handle_client_connect(packet)
-          identifier == client_handshake -> handle_client_handshake(packet)
-          identifier == client_disconnect -> handle_client_disconnect(packet)
-          identifier == nack -> handle_nack(packet)
-          identifier == ack -> handle_ack(packet)
-          true -> "shouldn't happen once every packet is implemented"
-        end
-    end
-    loop(socket, host, port)
-  end
-
-  defp handle_ping(packet) do
+  def handle_cast({:ping, packet}, state) do
     Logger.info "Got a ping! #{inspect packet}"
   end
 
-  defp handle_open_connection_request_1(packet) do
+  def handle_cast({:open_connection_request_1, packet}, state) do
     Logger.info "Got an open_connection_request_1! #{inspect packet}"
+    << _ :: binary-size(16), protocol :: size(8), mtu_size :: binary >> = packet
+
+    # id (i8), magic, server_identification, server_security (i8), mtuSize (i16)
+    response = << RakNet.open_connection_reply_1, RakNet.magic :: binary, RakNet.server_identification :: binary, 0 :: size(8), byte_size(mtu_size) + 46 :: size(16) >>
+    :gen_udp.send(state[:socket], state[:host], state[:port], response)
+
+    {:noreply, state}
   end
 
-  defp handle_open_connection_request_2(packet) do
+  def handle_cast({:open_connection_request_2, packet}, state) do
     Logger.info "Got an open_connection_request_2! #{inspect packet}"
+    {:noreply, state}
   end
 
-  defp handle_client_connect(packet) do
+  def handle_cast({:client_connect, packet}, state) do
     Logger.info "Got a client_connect! #{inspect packet}"
+    {:noreply, state}
   end
 
-  defp handle_client_handshake(packet) do
+  def handle_cast({:client_handshake, packet}, state) do
     Logger.info "Got a client_handshake! #{inspect packet}"
+    {:noreply, state}
   end
 
-  defp handle_client_disconnect(packet) do
+  def handle_cast({:client_disconnect, packet}, state) do
     Logger.info "Got a client_disconnect! #{inspect packet}"
+    {:noreply, state}
   end
 
-  defp handle_data_packet(packet) do
-    Logger.info "Got a data_packet! #{inspect packet}"
+  def handle_cast({:data_packet, packet}, state) do
+    Logger.info "Got an data_packet! #{inspect packet}"
+    {:noreply, state}
   end
 
-  defp handle_nack(packet) do
+  def handle_cast({:nack, packet}, state) do
     Logger.info "Got a nack! #{inspect packet}"
+    {:noreply, state}
   end
 
-  defp handle_ack(packet) do
+  def handle_cast({:ack, packet}, state) do
     Logger.info "Got an ack! #{inspect packet}"
+    {:noreply, state}
   end
 end
