@@ -1,10 +1,11 @@
 defmodule RakNet.Acceptor do
   require Logger
 
-  @response "MCPE;A Minecraft: PE Server;102;1.0.4.11;0;20"
+  @offline_ping_response Application.get_env(:rak_net, :offline_ping_response)
+  @max_connections Application.get_env(:rak_net, :max_connections)
 
   @magic << 0, 255, 255, 0, 254, 254, 254, 254, 253, 253, 253, 253, 18, 52, 86, 120 >>
-  @server_identification << 0, 5, 47, 12, 255, 154, 221, 225 >>
+  @server_identifier << 123456789 :: size(64) >>
 
   @ping 0x00
   @unconnected_ping 0x01
@@ -36,7 +37,7 @@ defmodule RakNet.Acceptor do
           identifier == @unconnected_ping ->
             << ping_identification :: size(64), _ :: binary >> = body
             
-            payload = << @unconnected_pong, ping_identification :: size(64), @server_identification :: binary , @magic :: binary, RakNet.DataTypes.write_string(@response) :: binary >>
+            payload = << @unconnected_pong, ping_identification :: size(64), @server_identifier :: binary , @magic :: binary, RakNet.DataTypes.write_string(@offline_ping_response) :: binary >>
 
             :gen_udp.send(socket, host, port, payload)
           identifier == @open_connection_request_1 ->
