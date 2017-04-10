@@ -2,57 +2,50 @@ defmodule RakNetTest do
   use ExUnit.Case
   doctest RakNet
 
+  @address {192, 168, 0, 1}
+  @triad 1
+  @string "Hello!"
+  @destination %{version: 4, address: @address, port: 12345}
+
   test "round trip ip address" do
-  	ip = {192, 168, 0, 1}
+  	{result, _} = RakNet.DataTypes.encode_ip_address(@address)
+  		         |> RakNet.DataTypes.decode_ip_address
 
-  	result = RakNet.DataTypes.write_ip_address(ip)
-  		  |> RakNet.DataTypes.read_ip_address
-
-  	assert ip == result
+  	assert result == @address
   end
   
   test "round trip triad" do
-  	triad = 1
+  	{result, _} = RakNet.DataTypes.encode_triad(@triad)
+  	           |> RakNet.DataTypes.decode_triad
 
-  	result = RakNet.DataTypes.write_triad(triad)
-  		  |> RakNet.DataTypes.read_triad
-
-  	assert triad == result
+  	assert result == @triad
   end
     
   test "round trip ltriad" do
-  	triad = 1
+  	{result, _} = RakNet.DataTypes.encode_ltriad(@triad)
+  		         |> RakNet.DataTypes.decode_ltriad
 
-  	result = RakNet.DataTypes.write_ltriad(triad)
-  		  |> RakNet.DataTypes.read_ltriad
-
-  	assert triad == result
+  	assert result == @triad
   end
   
   test "round trip string" do
-  	string = "Hello!"
+  	{result, _} = RakNet.DataTypes.encode_string(@string)
+  		         |> RakNet.DataTypes.decode_string
 
-  	result = RakNet.DataTypes.write_string(string)
-  		  |> RakNet.DataTypes.read_string
-
-  	assert string == result
+  	assert result == @string
   end
   
   test "round trip bstring" do
-  	string = "Hello!"
+  	{result, _} = RakNet.DataTypes.encode_bstring(@string)
+  		         |> RakNet.DataTypes.decode_bstring
 
-  	result = RakNet.DataTypes.write_bstring(string)
-  		  |> RakNet.DataTypes.read_bstring
-
-  	assert string == result
+  	assert result == @string
   end
 
   test "round trip address port" do
-    destination = %{version: 4, address: {192, 168, 0, 1}, port: 12345}
+    {result, _} = RakNet.DataTypes.encode_address_port(@destination)
+               |> RakNet.DataTypes.decode_address_port
 
-    result = RakNet.DataTypes.write_address_port(destination)
-        |> RakNet.DataTypes.read_address_port
-
-    assert destination == result
+    assert result == @destination
   end
 end
