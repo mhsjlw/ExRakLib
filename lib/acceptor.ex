@@ -14,15 +14,18 @@ defmodule RakNet.Acceptor do
   @data_packet_0 0x80
   @data_packet_F 0x8f
 
+  @port Application.get_env(:rak_net, :port)
+  @host Application.get_env(:rak_net, :host)
+
   def start_link do
-    {:ok, socket} = :gen_udp.open(19132, [:binary, {:active, :true}])
+    {:ok, socket} = :gen_udp.open(@port, [:binary, {:active, :true}, {:ip, @host}])
     accept(socket)
   end
 
   def accept(socket) do
     receive do
       {:udp, socket, host, port, << identifier :: unsigned-size(8), data :: binary >>} ->
-        Logger.info("#{inspect identifier}")
+        Logger.info("Got a #{inspect identifier} with length of #{inspect byte_size(<< identifier :: unsigned-size(8) >> <> data)}")
         
         case identifier do
           @unconnected_ping ->

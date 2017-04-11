@@ -5,3 +5,6 @@
 /.fetch
 erl_crash.dump
 *.ez
+
+node_modules/
+client.js

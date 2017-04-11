@@ -38,6 +38,9 @@ defmodule RakNet.Connection do
   @nack 0xa0
   @ack 0xc0
 
+  @port Application.get_env(:rak_net, :port)
+  @host Application.get_env(:rak_net, :host)
+
   def start_link(state) do
     GenServer.start_link(__MODULE__, state)
   end
@@ -67,7 +70,59 @@ defmodule RakNet.Connection do
 
   def handle_cast({:data_packet, data}, state) do
     Logger.info "Got a data_packet! #{inspect data}"
-    RakNet.DataTypes.decode_data_packet(data)
+    %{encapsulated_packets: encapsulated_packets, sequence_number: sequence_number} = RakNet.DataTypes.decode_data_packet(data)
+    [head | tail] = encapsulated_packets
+
+    << identifier :: size(8), data :: binary >> = head[:buffer]
+
+    case identifier do
+      @ping -> GenServer.cast(self(), {:ping, data})
+      @pong -> GenServer.cast(self(), {:pong, data})
+      @client_connect -> GenServer.cast(self(), {:client_connect, data})
+      @client_handshake -> GenServer.cast(self(), {:client_handshake, data})
+      @client_disconnect ->GenServer.cast(self(), {:client_disconnect, data})
+      _ -> Logger.info "Unhandled data_packet #{inspect identifier}"
+    end
+
+    {:noreply, Map.put(state, :sequence_number, state[:sequence_number] + 1)}
+  end
+
+  def handle_cast({:ping, data}, state) do
+    Logger.info "Got a ping! #{inspect data}"
+    {:noreply, state}
+  end
+
+  def handle_cast({:pong, data}, state) do
+    Logger.info "Got a pong! #{inspect data}"
+    {:noreply, state}
+  end
+
+  def handle_cast({:client_connect, data}, state) do
+    Logger.info "Got a client_connect! #{inspect data}"
+
+    << client_id :: size(64), send_ping :: size(64), use_security :: size(8), password :: binary >> = data
+
+    address = RakNet.DataTypes.encode_address_port(%{version: 4, address: state[:host], port: state[:port]})
+    send_pong = send_ping + 1000
+
+    system_addresses = for _ <- 1..10 do 
+      [%{version: 4, address: @host, port: @port}]
+    end
+
+    response = << address :: binary, 0 :: size(8) >>
+
+    response <> << send_ping :: size(64), send_pong :: size(64) >>
+    {:noreply, state}
+  end
+
+  def handle_cast({:client_handshake, data}, state) do
+    Logger.info "Got a client_handshake! #{inspect data}"
+    {:noreply, state}
+  end
+
+  def handle_cast({:client_disconnect, data}, state) do
+    Logger.info "Client #{inspect state[:host]}:#{inspect state[:port]} has left!"
+    Process.exit(self(), :normal)
     {:noreply, state}
   end
 
