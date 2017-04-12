@@ -82,30 +82,30 @@ defmodule RakNet.DataTypes do
   end
 
   def encode_encapsulated_packet(options, internal) do
-    {data} = if internal do
-      << options[:reliability] :: unsigned-size(3), options[:has_split] :: unsigned-size(5), byte_size(options[:buffer]) :: size(32), options[:identifier_ack] :: size(32) >>
+    data = if internal do
+      [<< options[:reliability] :: unsigned-size(3), options[:has_split] :: unsigned-size(5), byte_size(options[:buffer]) :: size(32), options[:identifier_ack] :: size(32) >>]
     else
-      << options[:reliability] :: unsigned-size(3), options[:has_split] :: unsigned-size(5), trunc(byte_size(options[:buffer]) * 8) :: size(16) >>
+      [<< options[:reliability] :: unsigned-size(3), options[:has_split] :: unsigned-size(5), trunc(byte_size(options[:buffer]) * 8) :: size(16) >>]
     end
 
-    {data} = if options[:reliability] > 0 && options[:reliability] >= 2 && options[:reliability] != 5 do
-      data <> << options[:message_index] :: little-size(24) >>
+    data = if options[:reliability] in [2, 3, 4, 6, 7] do
+      [data, << options[:message_index] :: little-size(24) >>]
     else
-      {data}
+      [data]
     end
 
-    {data} = if options[:reliability] > 0 && options[:reliability] <= 4 && options[:reliability] != 2 do
-      data <> << options[:order_index] :: little-size(24), options[:order_index] :: size(8) >>
+    data = if options[:reliability] in [1, 3, 4] do
+      [data, << options[:order_index] :: little-size(24), options[:order_channel] :: size(8) >>]
     else
-      {data}
+      [data]
     end
 
-    {data} = if options[:has_split] do
-      data <> << options[:split_count] :: size(32), options[:split_id] :: size(16), options[:split_index] :: size(32) >>
+    data = if options[:has_split] > 0 do
+      [data, << options[:split_count] :: size(32), options[:split_id] :: size(16), options[:split_index] :: size(32) >>]
     else
-      {data}
+      [data]
     end
 
-    data <> options[:buffer]
+    [data, options[:buffer]]
   end
 end

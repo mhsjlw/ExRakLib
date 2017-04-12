@@ -106,12 +106,20 @@ defmodule RakNet.Connection do
     send_pong = send_ping + 1000
 
     system_addresses = for _ <- 1..10 do 
-      [%{version: 4, address: @host, port: @port}]
+      %{version: 4, address: @host, port: @port}
     end
+    
+    response = :erlang.list_to_binary([
+      << @server_handshake, address :: binary, 0 :: size(8) >>,
+      Enum.map(system_addresses, fn(x) -> RakNet.DataTypes.encode_address_port(x) end),
+      << send_ping :: size(64), send_pong :: size(64) >>
+    ])
+    
+    encoded_data_packet = RakNet.DataTypes.encode_data_packet(%{sequence_number: state[:sequence_number], encapsulated_packets: [%{reliability: 2, has_split: 0, message_index: state[:message_index], buffer: response}]})
 
-    response = << address :: binary, 0 :: size(8) >>
-
-    response <> << send_ping :: size(64), send_pong :: size(64) >>
+    Map.put(state, :sequence_number, state[:sequence_number] + 1)
+    
+    :gen_udp.send(state[:socket], state[:host], state[:port], [@data_packet_4, encoded_data_packet])
     {:noreply, state}
   end
 

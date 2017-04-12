@@ -47,7 +47,7 @@ defmodule RakNet.Acceptor do
 
   defp handle_open_connection_request_1(socket, host, port, data) do
     if not in_registry?({host, port}) do
-      {:ok, client} = RakNet.Connection.start_link(%{socket: socket, host: host, port: port, sequence_number: 0})
+      {:ok, client} = RakNet.Connection.start_link(%{socket: socket, host: host, port: port, sequence_number: 0, message_index: 0})
       Registry.register(Registry.RakNet, {host, port}, client)
       GenServer.cast(client, {:open_connection_request_1, data})
     end
