@@ -1,0 +1,16 @@
+version: 2
+jobs:
+  build:
+    parallelism: 1
+    docker:
+      - image: circleci/elixir:1.6
+        environment:
+          MIX_ENV: test
+    working_directory: ~/ExRakLib
+    steps:
+      - checkout
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+      - run: mix test
+      - store_test_results:
+          path: _build/test/junit
